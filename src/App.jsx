@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react'
 import Search from './components/Search.jsx'
 
-const API_BASE_URL = 'https://api.themoviedb.org/3';
+const API_BASE_URL = '/api';
 
-const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const API_KEY = import.meta.env.VITE_CLIENT_ID;
+
+const API_SECRET = import.meta.env.VITE_CLIENT_SECRET;
+
 
 const API_OPTIONS = {
   method : 'GET',
   headers : {
-    accept : 'application/json',
-    Authorization : `Bearer ${API_KEY}`
+    'Content-Type' : 'application/json',
+    'User-Agent' : 'MoviesWebsite/1.0.0',
+    'trakt-api-key' : `${API_KEY}`,
+    'trakt-api-version' : 2
   }
 }
 
@@ -22,9 +27,11 @@ const App = () => {
   const fetchMovies = async () => {
     
     try{
-      const endpoint = `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+      const endpoint = `${API_BASE_URL}/movies/popular?extended=full`;
 
       const response = await fetch(endpoint, API_OPTIONS);
+      
+      const data = await response.json();
     }
     catch(error){
       console.log(`Error fetching movies : ${error}`);
