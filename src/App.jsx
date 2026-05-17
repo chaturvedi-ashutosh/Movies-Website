@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
+import { useDebounce } from 'react-use'
 import Search from './components/Search.jsx'
 import Spinner from './components/Spinner.jsx'
+import MovieCard from './components/MovieCard.jsx'
 
 const API_BASE_URL = '/api';
 
@@ -22,20 +24,24 @@ const API_OPTIONS = {
 const App = () => {
 
   const[searchTerm, setSearchTerm] = useState(''); 
-
   const[errorMessage, setErrorMessage] = useState('');
-
   const[movieList, setMovieList] = useState([]);
-
   const[isLoading, setIsLoading] = useState(false);
+  const[debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  
+  useDebounce(() => {
+    setDebouncedSearchTerm(searchTerm);
+  }, 500, [searchTerm]);
 
-  const fetchMovies = async () => {
+  const fetchMovies = async (query = '') => {
 
     setIsLoading(true);
     setErrorMessage('');
     
     try{
-      const endpoint = `${API_BASE_URL}/movies/popular?extended=full`;
+      const endpoint = query
+      ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&type&extended=full`
+      : `${API_BASE_URL}/movies/popular?extended=full`;
 
       const response = await fetch(endpoint, API_OPTIONS);
 
@@ -44,10 +50,21 @@ const App = () => {
       }
       
       const data = await response.json();
+      console.log('Fetched movies : ', data);
 
-      if(!data || data.length === 0){
-        setErrorMessage('Failed to fetch  movies');
+      if(!data){
+        setErrorMessage('Failed to fetch movies');
+        return;
+      }
+      if(data.length === 0){
+        setErrorMessage('No matching movies found!');
         setMovieList([]);
+        return;
+      }
+
+      if(query){
+        const movies = data.map(item => item.movie);
+        setMovieList(movies);
         return;
       }
 
@@ -63,8 +80,8 @@ const App = () => {
   }
 
   useEffect(() => {
-    fetchMovies();
-  }, []);
+    fetchMovies(debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
 
   return (
     <main>
@@ -88,7 +105,7 @@ const App = () => {
             ) : (
               <ul>
                 {movieList.map((movie) => (
-                  <p key={movie.ids.tmdb} className="text-white">{movie.title}</p>
+                  <MovieCard key={movie.ids.tmdb} movie={movie} />
                 ))}
               </ul>  
             )}
